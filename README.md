@@ -161,6 +161,117 @@ The original MATLAB scripts use local Windows paths. These must be configured fo
 
 Training from scratch requires the appropriate initialization and dataset-preparation scripts, as well as the main training and evaluation programs. Saved model checkpoints can be distributed separately when needed.
 
+## Reproducing the Final Results
+
+This repository includes the MATLAB implementation, trained model checkpoints, CFD reference data, and evaluation scripts used in the final comparison.
+
+### Requirements
+
+- MATLAB R2026a (developed using Update 4)
+- Deep Learning Toolbox
+- MATLAB support for automatic differentiation and numerical computing
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/priyankardas2007/PINN-Fluid-Dynamics-MATLAB.git
+cd PINN-Fluid-Dynamics-MATLAB
+```
+
+### Step 2: Configure MATLAB
+
+Open MATLAB and set the project root to the location where you cloned the repository:
+
+```matlab
+repoRoot = 'YOUR_LOCAL_REPOSITORY_PATH';
+
+addpath(genpath(fullfile(repoRoot,'MATLAB')));
+cd(repoRoot);
+```
+
+Replace `YOUR_LOCAL_REPOSITORY_PATH` with the actual folder path.
+
+### Step 3: Verify the Required Files
+
+The final evaluation uses these four files:
+
+```text
+data/training/cfd_supervised_dataset.mat
+
+results/cfd/cavity_fdm_Re100_N129.mat
+
+results/streamfunction_only/boundary_variants/
+matched_training/variant_m8_best.mat
+
+results/streamfunction_only/final_physics_m8/
+projected_best.mat
+```
+
+All four files must be available at the specified relative paths.
+
+### Step 4: Run the Final Evaluation
+
+In the MATLAB Command Window:
+
+```matlab
+run(fullfile(repoRoot,'MATLAB', ...
+    'evaluation','final_model_evaluation.m'));
+```
+
+This script compares the CFD-supervised m = 8 model against the physics-refined m = 8 model.
+
+The evaluation includes:
+
+- Validation and test velocity RMSE
+- Streamfunction RMSE
+- Fourth-order vorticity-transport residual
+- Sidewall and interior residual errors
+- Primary vortex-center location
+
+No additional neural-network training is required.
+
+### Step 5: Inspect the Results
+
+The script generates its outputs under:
+
+```text
+results/streamfunction_only/final_evaluation/
+```
+
+Expected generated files include:
+
+```text
+final_model_metrics.csv
+final_model_comparison.png
+final_evaluation_results.mat
+final_selected_pinn.mat
+```
+
+### Reference Results
+
+The selected physics-refined m = 8 PINN achieved:
+
+| Metric | Reported value |
+|---|---:|
+| Validation velocity RMSE | 0.091464 |
+| Test velocity RMSE | 0.093532 |
+| Test streamfunction RMSE | 0.013120 |
+| Transport residual RMSE | 35.375 |
+| Sidewall transport RMSE | 64.927 |
+| Interior transport RMSE | 3.245 |
+| Primary vortex displacement | 0.13844 |
+
+The transport residual was evaluated on a fixed 41 × 41 interior grid.
+
+Small numerical differences may occur depending on the MATLAB execution environment.
+
+### Reproducibility Scope
+
+This procedure reproduces the **final comparison using existing trained checkpoints**, without retraining.
+
+The complete historical training sequence includes additional intermediate experiments and checkpoints that are not all included in this release.
+
+The CFD test data consists of spatial samples from the same reference flow configuration. It should not be interpreted as an independent Reynolds-number or geometry generalization benchmark.
 ## Limitations
 
 The model is a research prototype and is **not a fully converged Navier–Stokes solution**.
