@@ -1,33 +1,32 @@
 
-# MATLAB generated files
+# MATLAB temporary and generated files
 *.asv
 *.autosave
 *.m~
-*.mlx.autosave
 slprj/
 codegen/
 *.mex*
-*.p
 
-# Temporary files
-*.tmp
-*.log
-.DS_Store
-Thumbs.db
-
-# Large MATLAB checkpoints
+# Ignore generated MAT-files by default
 *.mat
 
-# Training datasets
-data/training/
-checkpoints/
+# Allow the five published reference files
+!results/cfd/cavity_fdm_Re100_N129.mat
+!data/training/cfd_supervised_dataset.mat
+!results/streamfunction_only/boundary_variants/matched_training/variant_m8_best.mat
+!results/streamfunction_only/final_physics_m8/projected_best.mat
+!results/streamfunction_only/final_evaluation/final_selected_pinn.mat
 
-# Local machine configuration
+# Temporary files and logs
+*.log
+*.tmp
+*.temp
+
+# Local configuration
 .env
 .vscode/
 .idea/
 
-# Keep published CSV results and figures
-!results/
-!results/figures/
-!results/metrics/
+# OS generated files
+.DS_Store
+Thumbs.db
