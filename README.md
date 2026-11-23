@@ -1,234 +1,134 @@
-# Physics-Informed Neural Networks for 2D Lid-Driven Cavity Flow Using MATLAB
+# Physics-Informed Neural Networks for Fluid Dynamics Using MATLAB
 
-A MATLAB-based research implementation of **Physics-Informed Neural Networks (PINNs)** for two-dimensional, steady, incompressible lid-driven cavity flow at Reynolds number 100.
+A MATLAB-based implementation of **Physics-Informed Neural Networks (PINNs)** for two-dimensional, steady, incompressible lid-driven cavity flow at Reynolds number **Re = 100**.
 
-The project investigates how analytical boundary-condition enforcement, CFD-assisted learning, and boundary-extension design influence neural-network predictions and the satisfaction of governing fluid equations.
+This project combines finite-difference Computational Fluid Dynamics (CFD), deep learning, automatic differentiation, and analytical boundary-condition enforcement to investigate neural-network approximations of the Navier–Stokes equations.
 
-## Project Overview
+## Key Highlights
 
-Traditional computational fluid dynamics (CFD) methods solve fluid-flow governing equations through numerical discretization. Physics-Informed Neural Networks offer an alternative approach by incorporating governing physical equations into neural-network training.
-
-This project develops and evaluates a boundary-conforming streamfunction PINN, using an independently implemented finite-difference CFD solver as a numerical reference.
-
-The investigation includes:
-
-- Finite-difference simulation of a two-dimensional lid-driven cavity.
-- PINN modeling of velocity and vorticity fields.
-- Streamfunction-based enforcement of incompressibility.
-- Analytical enforcement of no-slip and moving-lid boundary conditions.
-- CFD-supervised learning and physics-informed refinement.
-- Analysis of fourth-order derivatives and transport residuals.
-- Comparison of alternative boundary-extension functions.
+- Developed an independent finite-difference CFD reference solver.
+- Implemented boundary-conforming streamfunction PINNs.
+- Analytically enforced incompressibility and velocity boundary conditions.
+- Investigated fourth-order automatic differentiation and gradient conflicts.
+- Compared analytical boundary extensions with exponents **m = 2, 6, 8**.
+- Achieved **0.093532 combined velocity RMSE** on the held-out CFD spatial test split.
+- Reduced fourth-order transport residual RMSE by approximately **59.05%** through boundary-extension redesign under matched training conditions.
 
 ## Mathematical Formulation
 
-For a steady, incompressible, two-dimensional fluid, the Navier–Stokes equations are
+The flow is modeled in a unit-square cavity:
 
-\[
-u\frac{\partial u}{\partial x}
-+v\frac{\partial u}{\partial y}
-=
--\frac{\partial p}{\partial x}
-+\frac{1}{Re}\nabla^2u
-\]
+$$
+(x,y)\in[0,1]\times[0,1]
+$$
 
-\[
-u\frac{\partial v}{\partial x}
-+v\frac{\partial v}{\partial y}
-=
--\frac{\partial p}{\partial y}
-+\frac{1}{Re}\nabla^2v
-\]
+For two-dimensional incompressible flow, continuity requires
 
-subject to the continuity equation
+$$
+\frac{\partial u}{\partial x}+
+\frac{\partial v}{\partial y}=0
+$$
 
-\[
-\frac{\partial u}{\partial x}
-+\frac{\partial v}{\partial y}=0.
-\]
+The streamfunction formulation defines velocity as
 
-The final neural model uses the streamfunction–vorticity formulation:
-
-\[
+$$
 u=\frac{\partial\psi}{\partial y},
 \qquad
 v=-\frac{\partial\psi}{\partial x}
-\]
+$$
 
-\[
-\omega=-\nabla^2\psi.
-\]
+Vorticity is derived directly from the streamfunction:
 
-The remaining physics equation is the steady vorticity-transport equation:
+$$
+\omega=-\nabla^2\psi
+$$
 
-\[
+The remaining steady governing equation is
+
+$$
 u\frac{\partial\omega}{\partial x}
-+v\frac{\partial\omega}{\partial y}
--\frac{1}{Re}\nabla^2\omega=0.
-\]
++
+v\frac{\partial\omega}{\partial y}
+-
+\frac{1}{Re}\nabla^2\omega=0
+$$
 
-The Reynolds number is fixed at
+At **Re = 100**, the dimensionless viscosity is
 
-\[
-Re=100,\qquad \nu=0.01.
-\]
+$$
+\nu=\frac{1}{100}=0.01
+$$
 
-### Boundary Conditions
+## Boundary-Conforming PINN
 
-The computational domain is a unit-square cavity:
+The final neural-network architecture is:
 
-\[
-(x,y)\in[0,1]\times[0,1].
-\]
+**2 → 64 → 64 → 64 → 64 → 1**
 
-The stationary walls satisfy
+It uses four hidden layers with 64 neurons each, tanh activations, and one scalar output.
 
-\[
-u=v=0.
-\]
+The analytical streamfunction transformation is
 
-The moving upper wall satisfies
+$$
+\psi(x,y)=y^m(y-1)g(x)
++256x^2(1-x)^2y^2(1-y)^2N_\theta(x,y)
+$$
 
-\[
-u(x,1)=g(x),\qquad v(x,1)=0
-\]
+The smoothed moving-lid velocity is
 
-where
-
-\[
+$$
 g(x)=
 \left(1-e^{-(x/\delta)^2}\right)
 \left(1-e^{-((1-x)/\delta)^2}\right),
-\qquad \delta=0.075.
-\]
+\qquad \delta=0.075
+$$
 
-This smoothed-lid boundary condition is used consistently in the PINN and the CFD reference. It differs from the classical discontinuous, uniformly moving lid problem.
+The selected architecture uses **m = 8**.
 
-## PINN Architecture
-
-The selected neural network uses four hidden layers with 64 neurons per layer and hyperbolic tangent activation functions.
-
-**Architecture:**
-
-`2 → 64 → 64 → 64 → 64 → 1`
-
-Inputs: spatial coordinates \(x,y\).
-
-Output: a scalar neural correction \(N_\theta(x,y)\).
-
-The boundary-conforming streamfunction is
-
-\[
-\psi(x,y)=
-y^m(y-1)g(x)
-+
-256x^2(1-x)^2y^2(1-y)^2N_\theta(x,y).
-\]
-
-The final selected boundary exponent is
-
-\[
-m=8.
-\]
-
-This construction enforces the prescribed velocity boundary conditions analytically. Incompressibility and the streamfunction–vorticity Poisson relationship are also satisfied by construction, up to numerical differentiation error.
+The transformation enforces the prescribed velocity boundary conditions by construction, including no-slip stationary walls and the smoothed moving lid. It also enforces continuity and the streamfunction–vorticity Poisson identity analytically.
 
 ## CFD Reference
 
-A finite-difference streamfunction–vorticity solver was independently implemented in MATLAB.
+An independent finite-difference streamfunction–vorticity solver was implemented using sparse matrix operations, pseudo-time iteration, upwind advection and implicit diffusion.
 
-Its numerical approach uses:
-
-- A structured Cartesian grid.
-- Finite-difference spatial operators.
-- Sparse linear-system solvers.
-- Pseudo-time iteration toward steady state.
-- Upwind treatment of vorticity advection.
-- Implicit treatment of viscous diffusion.
-
-Two grid resolutions were examined: 65 × 65 and 129 × 129.
-
-The finer-grid reference produced:
-
-| Quantity | Result |
-|---|---:|
+| Parameter | Value |
+|---|---|
 | Reynolds number | 100 |
-| Grid resolution | 129 × 129 |
-| Lid smoothing parameter | 0.075 |
+| Final CFD grid | 129 × 129 |
+| Lid smoothing | 0.075 |
+| Solver iterations | 8,887 |
 | Minimum streamfunction | −0.103099 |
 | Primary vortex center | (0.617188, 0.742188) |
-| Solver iterations | 8,887 |
 
-The 65 × 65 versus 129 × 129 grid comparison gave velocity RMSE differences of approximately 0.002634 for \(u\) and 0.002089 for \(v\).
-
-This provides evidence of grid refinement consistency, although a formal grid-convergence-order study was not performed.
-
-## Training Methodology
-
-Development proceeded through successive implementations:
-
-1. Initial velocity–pressure PINN.
-2. Streamfunction–vorticity PINN.
-3. Boundary-conforming streamfunction architecture.
-4. Gradient-conflict and loss-balancing investigations.
-5. CFD-assisted supervised learning.
-6. Fourth-order streamfunction-only physics formulation.
-7. Analytical boundary-extension comparison.
-8. Physics-informed refinement of the selected architecture.
-
-The final model uses CFD-supervised velocity and streamfunction losses together with a fourth-order vorticity-transport residual.
-
-Gradient projection and controlled physics-gradient scaling were employed during the final refinement stage to reduce conflicts between supervised and physics objectives.
+A refinement comparison was conducted using 65 × 65 and 129 × 129 grids.
 
 ## Boundary-Extension Comparison
 
-The analytical lifting function was generalized to
+Three streamfunction lifting exponents were investigated under matched CFD-supervised training conditions.
 
-\[
-f_m(y)=y^m(y-1).
-\]
+| Boundary exponent | Validation velocity RMSE | Transport residual RMSE |
+|---|---:|---:|
+| m = 2 | 0.158517 | 87.879 |
+| m = 6 | **0.094774** | 41.325 |
+| m = 8 | 0.095174 | **35.983** |
 
-The exponents \(m=2,6,8\) were trained and compared.
+The m = 8 formulation reduced transport residual RMSE by approximately **59.05%** relative to m = 2 on the same 41 × 41 evaluation grid.
 
-### CFD Validation Accuracy
+## Final Model Results
 
-| Boundary exponent | Combined velocity RMSE |
-|---|---:|
-| \(m=2\) | 0.158517 |
-| \(m=6\) | 0.094774 |
-| \(m=8\) | 0.095174 |
+The physics-refined m = 8 model was selected.
 
-### Fourth-Order Physics Accuracy
-
-| Boundary exponent | Transport residual RMSE |
-|---|---:|
-| \(m=2\) | 87.879 |
-| \(m=6\) | 41.325 |
-| \(m=8\) | 35.983 |
-
-All physics residual values in this comparison were evaluated using the same 41 × 41 interior grid.
-
-The redesigned \(m=8\) model reduced transport residual RMSE by approximately **59.05%** relative to the matched \(m=2\) model.
-
-This was an improvement in residual magnitude, not a claim of full convergence to a Navier–Stokes solution.
-
-## Final Evaluation Results
-
-The selected model is the physics-refined \(m=8\) streamfunction PINN.
-
-| Evaluation metric | Final value |
+| Metric | Result |
 |---|---:|
 | Validation combined velocity RMSE | 0.091464 |
 | Test horizontal velocity RMSE | 0.074230 |
 | Test vertical velocity RMSE | 0.109480 |
-| Test combined velocity RMSE | 0.093532 |
+| Test combined velocity RMSE | **0.093532** |
 | Test streamfunction RMSE | 0.013120 |
-| Fourth-order transport residual RMSE | 35.375 |
-| Sidewall transport residual RMSE | 64.927 |
-| Interior transport residual RMSE | 3.245 |
+| Fourth-order transport RMSE | 35.375 |
+| Sidewall transport RMSE | 64.927 |
+| Interior transport RMSE | 3.245 |
 | Maximum absolute transport residual | 250.776 |
-
-Relative to the unrefined \(m=8\) model, physics refinement improved validation velocity RMSE by approximately 3.90% and transport residual RMSE by approximately 1.69%, measured on the same respective evaluation sets.
 
 ### Primary Vortex Comparison
 
@@ -239,58 +139,47 @@ Relative to the unrefined \(m=8\) model, physics refinement improved validation 
 
 The vortex-center displacement is approximately **0.13844 cavity-length units**.
 
-## Software Requirements
+## Software
 
-- MATLAB R2026a (development environment).
-- Deep Learning Toolbox.
-- MATLAB functionality for sparse matrices, numerical differentiation and visualization.
+- MATLAB R2026a Update 4
+- Deep Learning Toolbox
+- MATLAB sparse matrix and numerical computing functions
 
-The original experiments were performed in MATLAB R2026a Update 4. Other MATLAB versions have not been verified.
+## Implementation Workflow
 
-## Reproducing the Results
+The project includes the following major stages:
 
-The project scripts use a local project root. Update the root path in the scripts before execution.
+1. Finite-difference CFD reference solution.
+2. CFD dataset generation and partitioning.
+3. Boundary-conforming PINN development.
+4. CFD-assisted neural-network training.
+5. Analytical boundary-extension comparison.
+6. Fourth-order physics-informed refinement.
+7. Final comparative evaluation.
 
-The principal workflow is:
+The original MATLAB scripts use local Windows paths. These must be configured for the user's environment before running the complete workflow.
 
-1. Run `solve_cavity_fdm.m` to generate the finite-difference CFD reference.
-2. Prepare the CFD-supervised dataset using the project's dataset-preparation script.
-3. Initialize or load the boundary-conforming PINN checkpoint.
-4. Run `train_boundary_variants.m` to compare the boundary exponents.
-5. Run `compare_boundary_variant_physics.m` for the common-grid physics comparison.
-6. Run `train_final_physics_m8.m` for refinement.
-7. Run `final_model_evaluation.m` to reproduce the final evaluation tables and figures.
-
-Reproduction from scratch requires the preceding initialization and dataset-preparation stages. Saved checkpoints can instead be used to evaluate already trained models when distributed separately.
+Training from scratch requires the appropriate initialization and dataset-preparation scripts, as well as the main training and evaluation programs. Saved model checkpoints can be distributed separately when needed.
 
 ## Limitations
 
-The project does not establish a fully converged PINN solution of the Navier–Stokes equations.
+The model is a research prototype and is **not a fully converged Navier–Stokes solution**.
 
-Important limitations include:
+Significant fourth-order transport residuals remain near the sidewalls. The predicted primary vortex center also differs from the independent CFD reference.
 
-- Significant fourth-order transport residuals remain, particularly near the cavity sidewalls.
-- The predicted primary vortex center differs from the independent CFD reference.
-- The CFD baseline uses a smoothed-lid boundary condition rather than the classical discontinuous moving lid.
-- Only Reynolds number 100 was investigated in the final configuration.
-- The CFD grid comparison used two resolutions rather than a formal three-grid convergence analysis.
-- The spatially partitioned CFD dataset originates from one numerical flow field; the test split is not an independent flow configuration.
-- Results on the reused CFD test partition should be interpreted as spatial interpolation evaluation, not generalization to new Reynolds numbers or geometries.
+The final experiments focus on Reynolds number 100 with a smoothed-lid boundary condition. Test samples originate from the same numerical CFD flow field and therefore evaluate spatial interpolation rather than generalization to unseen flow conditions.
 
 ## Conclusion
 
-The project demonstrates that the design of an analytical boundary extension can substantially influence the training behavior and governing-equation residuals of a streamfunction-based PINN.
+This project demonstrates how analytical boundary-extension design, CFD-assisted training and physics-informed optimization influence the accuracy of neural fluid-flow models.
 
-The final \(m=8\) architecture provides improved CFD-assisted velocity predictions and a substantially lower fourth-order transport residual than the original \(m=2\) architecture.
+The redesigned streamfunction PINN improves CFD velocity reconstruction and substantially reduces fourth-order governing-equation residuals compared with the original architecture, while highlighting the challenges of achieving complete physical consistency.
 
-The model remains a research prototype with documented physical-consistency limitations rather than a replacement for a converged CFD solver.
+## Author
 
-## Project Status
+**Priyankar Das**
 
-Research implementation and final comparative evaluation completed.
+Electronics and Telecommunication Engineering  
+Army Institute of Technology, Pune
 
-Further research may investigate improved physics convergence, more accurate vortex-center prediction, and extension to additional Reynolds numbers and geometries.
-
-## License
-
-See the `LICENSE` file for the applicable repository license.
+[GitHub Profile](https://github.com/priyankardas2007)
