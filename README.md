@@ -286,6 +286,13 @@ This project demonstrates how analytical boundary-extension design, CFD-assisted
 
 The redesigned streamfunction PINN improves CFD velocity reconstruction and substantially reduces fourth-order governing-equation residuals compared with the original architecture, while highlighting the challenges of achieving complete physical consistency.
 
+## Acknowledgment of AI Assistance
+
+I developed this project using MATLAB, implementing and evaluating a Physics-Informed Neural Network (PINN) for two-dimensional fluid flow simulation. Throughout the development process, I used OpenAI's ChatGPT as a supporting tool for understanding mathematical concepts, debugging MATLAB code, exploring optimization strategies, and improving technical documentation.
+
+I worked on the model development, executed the simulations and training experiments, analyzed the numerical results, and refined the implementation based on the observed performance. ChatGPT assisted with code suggestions, troubleshooting, and interpreting experimental outcomes.
+
+The final implementation, experimental findings, and conclusions reflect my work in developing, testing, and evaluating the project using MATLAB.
 ## Author
 
 **Priyankar Das**
