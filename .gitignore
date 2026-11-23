@@ -1,0 +1,33 @@
+
+# MATLAB generated files
+*.asv
+*.autosave
+*.m~
+*.mlx.autosave
+slprj/
+codegen/
+*.mex*
+*.p
+
+# Temporary files
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# Large MATLAB checkpoints
+*.mat
+
+# Training datasets
+data/training/
+checkpoints/
+
+# Local machine configuration
+.env
+.vscode/
+.idea/
+
+# Keep published CSV results and figures
+!results/
+!results/figures/
+!results/metrics/
